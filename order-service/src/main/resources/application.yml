@@ -1,0 +1,33 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: order-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/order_db
+    username: postgres
+    password: 123456a@
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  services:
+    customer:
+      url: http://localhost:8081
+    product:
+      url: http://localhost:8082
+
+  logging:
+    level:
+      com.example.orderservice: DEBUG
+      org.springframework.web: INFO
+      org.springframework.web.client: DEBUG
