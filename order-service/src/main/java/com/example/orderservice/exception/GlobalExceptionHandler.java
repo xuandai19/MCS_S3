@@ -95,6 +95,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
     }
 
+    private static final String PRODUCT_SERVICE_DOWN_MSG =
+            "Hệ thống đang quá tải, yêu cầu của bạn đã được ghi nhận nhưng chưa thể hoàn tất kiểm tra kho. Vui lòng quay lại sau 1 phút.";
+
+    @ExceptionHandler(ProductServiceUnavailableException.class)
+    public ResponseEntity<ApiResponseError> handleProductServiceUnavailable(
+            ProductServiceUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiResponseError(
+                        LocalDateTime.now(),
+                        503,
+                        "Service Unavailable",
+                        PRODUCT_SERVICE_DOWN_MSG
+                ));
+    }
+
     // Xử lý lỗi RuntimeException (bao gồm cả lỗi từ ServiceClient)
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponseError> handleRuntimeException(RuntimeException ex) {

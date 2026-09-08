@@ -10,7 +10,7 @@ ext {
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-description = 'order-service'   // ← sửa từ customer-service
+description = 'discovery-server'
 
 java {
     toolchain {
@@ -23,17 +23,9 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-server'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'org.springframework.security:spring-security-crypto'
-    implementation 'org.postgresql:postgresql'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
 }
 
 dependencyManagement {

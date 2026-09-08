@@ -30,64 +30,41 @@ public class OrderService {
         log.info("Creating order for customerId: {}, productId: {}",
                 request.getCustomerId(), request.getProductId());
 
-        try {
-            // 1. Kiểm tra customer tồn tại
-            CustomerResponseDTO customer = serviceClient.getCustomerById(request.getCustomerId());
-            log.info("Customer found: {}", customer.getFullName());
+        // 1. Kiểm tra customer
+        CustomerResponseDTO customer = serviceClient.getCustomerById(request.getCustomerId());
+        log.info("Customer found: {}", customer.getFullName());
 
-            // 2. Lấy thông tin product (CÓ FALLBACK)
-            ProductResponseDTO product = serviceClient.getProductById(request.getProductId());
+        // 2. Lấy product qua Eureka (nếu không có instance → 503)
+        ProductResponseDTO product = serviceClient.getProductById(request.getProductId());
 
-            // Kiểm tra nếu product là fallback (giá = 0, stock = 0)
-            boolean isFallback = product.getPrice().compareTo(BigDecimal.ZERO) == 0
-                    && product.getStockQuantity() == 0;
-
-            if (isFallback) {
-                log.warn("Using fallback product data for order creation");
-                // Vẫn cho phép tạo order nhưng với price = 0
-            }
-
-            // 3. Kiểm tra stock (chỉ kiểm tra nếu không phải fallback)
-            if (!isFallback && product.getStockQuantity() < request.getQuantity()) {
-                throw new RuntimeException("Insufficient stock. Available: " + product.getStockQuantity());
-            }
-
-            // 4. Tính toán totalAmount
-            BigDecimal totalAmount = product.getPrice().multiply(
-                    BigDecimal.valueOf(request.getQuantity())
-            );
-
-            // 5. Tạo order entity
-            Order order = Order.builder()
-                    .customerId(request.getCustomerId())
-                    .productId(request.getProductId())
-                    .quantity(request.getQuantity())
-                    .productPrice(product.getPrice())
-                    .totalAmount(totalAmount)
-                    .orderDate(LocalDateTime.now())
-                    .status(isFallback ? OrderStatus.PENDING_REVIEW : OrderStatus.PENDING)
-                    .build();
-
-            // 6. Lưu vào database
-            Order savedOrder = orderRepository.save(order);
-            log.info("Order saved successfully with ID: {}", savedOrder.getId());
-
-            // 7. Trả về response
-            OrderResponseDTO response = mapToResponseDTO(savedOrder);
-            response.setCustomer(customer);
-            response.setProduct(product);
-
-            // Nếu là fallback, thêm warning message
-            if (isFallback) {
-                response.setMessage("Order created with fallback product data. Price may not be accurate.");
-            }
-
-            return response;
-
-        } catch (Exception e) {
-            log.error("Failed to create order: {}", e.getMessage());
-            throw new RuntimeException("Failed to create order: " + e.getMessage());
+        // 3. Kiểm tra stock
+        if (product.getStockQuantity() < request.getQuantity()) {
+            throw new RuntimeException("Insufficient stock. Available: " + product.getStockQuantity());
         }
+
+        // 4. Tính totalAmount
+        BigDecimal totalAmount = product.getPrice().multiply(
+                BigDecimal.valueOf(request.getQuantity())
+        );
+
+        // 5. Tạo order
+        Order order = Order.builder()
+                .customerId(request.getCustomerId())
+                .productId(request.getProductId())
+                .quantity(request.getQuantity())
+                .productPrice(product.getPrice())
+                .totalAmount(totalAmount)
+                .orderDate(LocalDateTime.now())
+                .status(OrderStatus.PENDING)
+                .build();
+
+        Order savedOrder = orderRepository.save(order);
+        log.info("Order saved successfully with ID: {}", savedOrder.getId());
+
+        OrderResponseDTO response = mapToResponseDTO(savedOrder);
+        response.setCustomer(customer);
+        response.setProduct(product);
+        return response;
     }
 
     public OrderResponseDTO getOrderById(Long id) {
