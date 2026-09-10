@@ -1,0 +1,82 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: API-GATEWAY
+
+  cloud:
+    gateway:
+      routes:
+        - id: customer-service
+          uri: lb://CUSTOMER-SERVICE
+          predicates:
+            - Path=/api/v1/customers/**
+          filters:
+            - AddResponseHeader=X-System-Name, Api-Gateway-System
+
+        - id: product-service
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/api/v1/products/**
+          filters:
+            - AddResponseHeader=X-System-Name, Api-Gateway-System
+
+        - id: order-service
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/v1/order-api/**, /api/v1/orders/**
+          filters:
+            - AddResponseHeader=X-System-Name, Api-Gateway-System
+            - RewritePath=/v1/order-api/(?<segment>.*), /api/v1/orders/$\{segment}
+
+      # Cấu hình Timeout kết nối HTTP Client
+      httpclient:
+        connect-timeout: 3000      # Timeout kết nối (3 giây)
+        response-timeout: 5s       # Timeout phản hồi (5 giây)
+
+      # Cấu hình CORS toàn cục
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+# ============================================
+# CẤU HÌNH ACTUATOR
+# ============================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"                          # Hoặc: gateway,health,info,routes
+  endpoint:
+    gateway:
+      enabled: true                           # BẮT BUỘC
+      access: unrestricted
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.apigateway: DEBUG             # Log chi tiết gói tin custom
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.boot.actuate: DEBUG
+    reactor.netty.http.client: INFO           # Log kết nối Netty
